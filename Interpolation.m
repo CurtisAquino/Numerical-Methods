@@ -34,5 +34,24 @@ function F = PiecewiseLinearInterpolation(x,y,x0)
     end
 end
 
+%% 2. CUBICSPLINEPLUS
+
+temp        = spline(X,Y);
+F           = sum(temp.coefs.*(sym('X')-X(1:(end-1))').^(3:-1:0),2);
+
+% Endogenous Piecewise
+syms X
+Text = sprintf('piecewise(');
+for i = 1:(length(temp.breaks)-1)
+    if i == (length(temp.breaks)-1)
+        Text = [Text, sprintf('temp.breaks(%i) <= X & X <= temp.breaks(%i),F(%i))',i,i+1,i)];       %#ok<*AGROW>
+    elseif i == 1
+        Text = [Text, sprintf('temp.breaks(%i) <= X & X <= temp.breaks(%i),F(%i),',i,i+1,i)];       %#ok<*AGROW>
+    else
+        Text = [Text, sprintf('temp.breaks(%i) <= X & X <= temp.breaks(%i),F(%i),',i,i+1,i)];
+    end
+end
+F = eval(Text);
+
     end
 end

@@ -1,49 +1,26 @@
 classdef GaussianApproximation
     methods(Static)
         %% GAUSSIANAPPROXIMATION TOOLKIT
-        %
-        % Written by Curtis Aquino (2019). Contains:
-        %
+        % Written by Curtis Aquino (2019)
+        % Contains:
         %   1. Initialization():
-        %   This function is required for all functions to run.
+        %       This function is required for all functions to run.
         %
         %   2. SymbolicPolynomial()
-        %   Creates symbolic expressions for the first N polynomials for 
-        %   a class of Gaussian polynomials. For Gaussian polynomials 
-        %   without analytical expressions, this will become slow for 
-        %   high order polynomials.
         %
         %   3. NumericPolynomial()
-        %   Returns numerical solutions for the first N polynomials for a 
-        %   class of Gaussian polynomials evaluated at a set of points. 
-        %   This method is very fast for even high order polynomials as no
-        %   symbolic calculations are performed. 
         %
         %   4. SymoblicNodesWeights()
-        %   Finds the nodes and weights for a variety of Gaussian 
-        %   polynomials using MATLAB's symbolic solver. It is very 
-        %   accurate, but slow for high order polynomials.
         %
         %   5. NumericNodesWeights()
-        %   Finds the nodes and weights for a variety of Gaussian 
-        %   polynomials numerically. This method is very fast for even 
-        %   high order polynomials as no symbolic calculations are 
-        %   performed. This is done at the expense of accuracy, 
-        %   particularly for the weights. 
-
-        %   6. SymbolicInterpolate()
-        %   Interpolates the Y data using M nodes by an Nth order
-        %   polynomial for a variety of Gaussian polynomials. This uses a
-        %   slow but accurate symbolic method.
         %
-        %   7. NumericInterpolate()
-        %   Interpolates the Y data using M nodes by an Nth order
-        %   polynomial for a variety of Gaussian polynomials. This uses a
-        %   fast but inaccurate numeric method.
+        %   4. Interpolate()
+        %
         
 %% 1. INITIALIZATION      
+% 
 %==========================================================================
-function [T,Sp]     = Initialization(GaussianPolynomial)
+function [T,Spprt]      = Initialization(GaussianPolynomial)
     Types   = {
             'Gauss-Legendre';...
             'Gauss-Chebyshev';...
@@ -51,51 +28,60 @@ function [T,Sp]     = Initialization(GaussianPolynomial)
             'Gauss-Laguerre'
             };
     T       = find(strcmp(GaussianPolynomial,Types));
-    Sp   = length(Types);
+    Spprt   = length(Types);
 end
+
 %% 2. SYMBOLICPOLYNOMIAL
+% Creates symbolic expressions for the first N polynomials for a class of 
+% Gaussian polynomials. For Gaussian polynomials without analytical
+% expressions, this will become slow for very high order polynomials.
 %==========================================================================
-function P          = SymbolicPolynomial(PolynomialOrder,GaussianPolynomial)
+function Polynomial     = SymbolicPolynomial(PolynomialOrder,GaussianPolynomial)
     
     [T,~]           = GaussianApproximation.Initialization(GaussianPolynomial);
     N               = PolynomialOrder+1;
     X               = sym('X','real');
-    P      = sym(zeros(N,1));
-    P(1)   = 1;
+    Polynomial      = sym(zeros(N,1));
+    Polynomial(1)   = 1;
     
     if T == 1
        Coef     = [[0,0,X.*(2.*(1:N)+1)./(2:(N+1))];[0,0,(1:N)./(2:(N+1))]];
-       P(2) = X;
+       Polynomial(2) = X;
     end 
     
     if T == 2
        Coef     = [[0,0,repmat(2*X,1,N)]; [0,0,ones(1,N)]];
-       P(2) = X;
+       Polynomial(2) = X;
     end
         
     if T == 3
        Coef     = [[0,0,repmat(2*X,1,N)]; [0,0,2*(1:N)]];
-       P(2) = 2*X;
+       Polynomial(2) = 2*X;
     end
     
     if T == 4
        Coef     = [[0,0,(2.*(1:N)+1-X)./(2:(N+1))];[0,0,(1:N)./(2:(N+1))]];
-       P(2) = 1-X;
+       Polynomial(2) = 1-X;
     end
     
     for i = 3:N
-       P(i) =  Coef(1,i)*P(i-1)-Coef(2,i)*P(i-2);
+       Polynomial(i) =  Coef(1,i)*Polynomial(i-1)-Coef(2,i)*Polynomial(i-2);
     end
 end
-%% 3. NUMERICPOLYNOMIAL
+
+%% 2. NUMERICPOLYNOMIAL
+% Returns numerical solutions for the first N polynomials for a class of 
+% Gaussian polynomials evaluated at a set of points. This method is very
+% fast for even high order polynomials as no symbolic calculations are
+% performed. 
 %==========================================================================
-function P          = NumericPolynomial(PolynomialOrder,GaussianPolynomial,X)
+function Polynomial     = NumericPolynomial(PolynomialOrder,GaussianPolynomial,X)
     
     % Initialization
     [T,~]           = GaussianApproximation.Initialization(GaussianPolynomial);
     N               = PolynomialOrder+1;
     XLen            = length(X);
-    P(:,1) = ones(XLen,1);
+    Polynomial(:,1) = ones(XLen,1);
     
     % Fixes input size
     if isrow(X); X = X'; end
@@ -104,68 +90,82 @@ function P          = NumericPolynomial(PolynomialOrder,GaussianPolynomial,X)
     if T == 1
        Coef(:,:,1) = [zeros(XLen,2),(X.*(2.*(1:N)+1))./(2:(N+1))]; 
        Coef(:,:,2) = repmat([0,0,(1:N)./(2:(N+1))],XLen,1);
-       P(:,2) = X;
+       Polynomial(:,2) = X;
     end 
     if T == 2
        Coef(:,:,1) = [zeros(XLen,2),repmat(2*X,1,N)];
        Coef(:,:,2) = repmat([0,0,ones(1,N)],XLen,1);
-       P(:,2) = X;
+       Polynomial(:,2) = X;
     end
     if T == 3
        Coef(:,:,1) = [zeros(XLen,2),repmat(2*X,1,N)];
        Coef(:,:,2) = repmat([0,0,2*(1:N)],XLen,1);
-       P(:,2) = 2*X;
+       Polynomial(:,2) = 2*X;
     end
     if T == 4
        Coef(:,:,1) = [zeros(XLen,2),(2.*(1:N)+1-X)./(2:(N+1))]; 
        Coef(:,:,2) = repmat([0,0,(1:N)./(2:(N+1))],XLen,1);
-       P(:,2) = 1-X;
+       Polynomial(:,2) = 1-X;
     end
     
     % Recursion relation
     for i = 3:N
-       P(:,i) = Coef(:,i,1).*P(:,i-1)-Coef(:,i,2).*P(:,i-2);
+       Polynomial(:,i) = Coef(:,i,1).*Polynomial(:,i-1)-Coef(:,i,2).*Polynomial(:,i-2);
     end
     
     % Output table
     for i = 1:N
         ColName{i} = sprintf('Degree%i',i-1); %#ok<AGROW>
     end
-    P  = array2table(P,'VariableNames',ColName);
+    Polynomial  = array2table(Polynomial,'VariableNames',ColName);%,'RowNames',strcat('X=',cellstr(num2str(X))));
 end
-%% 4. SYMBOLICNODESWEIGHTS
+
+%% 3. SYMBOLICNODESWEIGHTS
+% Finds the nodes and weights for a variety of Gaussian polynomials using
+% MATLAB's symbolic solver. It is very accurate, but slow for high order
+% polynomials.
 %==========================================================================
-function [Nd,Wt]    = SymbolicNodesWeights(PolynomialOrder,GaussianPolynomial)
+function [Nodes,Weights]= NodesWeights(PolynomialOrder,GaussianPolynomial)
     N       = PolynomialOrder;
     [T,~]   = GaussianApproximation.Initialization(GaussianPolynomial);
     if T == 2
-        Nd       = -cos((2*(1:N)-1)*pi/(2*N))';
-        Wt       = repmat(pi/N,N,1);
+        Nodes       = -cos((2*(1:N)-1)*pi/(2*N))';
+        Weights       = repmat(pi/N,N,1);
     else
-        Var     = GaussianApproximation.SymbolicPolynomial(N+1,GaussianPolynomial);
+        Var     = GaussianApproximation.Polynomial(N+1,GaussianPolynomial);
         Var     = Var(end-1);
         Jac     = jacobian(Var);
-        Nd       = real(double(vpasolve(Var)));    
+        Nodes       = real(double(vpasolve(Var)));    
         if T == 1 
-            Wt       = 2./double((1-Nd.^2).*subs(Jac,Nd).^2);
+            Weights       = 2./double((1-Nodes.^2).*subs(Jac,Nodes).^2);
         elseif T ==3 
-            Wt       = double((2^(N+1)*factorial(N)*sqrt(pi))./(subs(Jac,Nd).^2));
+            Weights       = double((2^(N+1)*factorial(N)*sqrt(pi))./(subs(Jac,Nodes).^2));
         elseif T == 4
-            Wt       = double(1./(Nd.*(subs(Jac,Nd).^2)));
+            Weights       = double(1./(Nodes.*(subs(Jac,Nodes).^2)));
         end
     end
 end
-%% 5. NUMERICNODESWEIGHTS
+
+%% 4. NUMERICNODESWEIGHTS
+% Finds the nodes and weights for a variety of Gaussian polynomials
+% numerically. This method is very fast for even high order polynomials as 
+% no symbolic calculations are performed. This is done at the expense of 
+% accuracy, particularly for the weights. 
 %==========================================================================
-function [Nd,Wt]    = NumericNodesWeights(PolynomialOrder,GaussianPolynomial)
-    
+function [Nodes,Weights]= NumericNodesWeights(PolynomialOrder,GaussianPolynomial)
     N       = PolynomialOrder;
     [T,~]   = GaussianApproximation.Initialization(GaussianPolynomial);
     Fn      = @(X) GaussianApproximation.NumericPolynomial(N,GaussianPolynomial,X);
     
+    N= 50;
+    T = 3;
+    GaussianPolynomial = 'Gauss-Hermite';
+    Fn      = @(X) GaussianApproximation.NumericPolynomial(N,GaussianPolynomial,X);
+    
+    
     if T == 2
-        Nd      = -cos((2*(1:N)-1)*pi/(2*N))';
-        Wt      = repmat(pi/N,N,1);
+        Nodes       = -cos((2*(1:N)-1)*pi/(2*N))';
+        Weights     = repmat(pi/N,N,1);
     else
         if T == 1
             Range       = [-1,1];
@@ -178,7 +178,7 @@ function [Nd,Wt]    = NumericNodesWeights(PolynomialOrder,GaussianPolynomial)
         end
         
         % Find root ranges
-        GridPrecision = 50000;
+        GridPrecision = 100000; % This is set exogenously
         IntBi   = linspace(Range(1),Range(2),GridPrecision);
         Roots   = Fn(IntBi);
         Roots   = IntBi([true;diff(sign(Roots{2:(end-1),N+1})) ~= 0;true]);
@@ -188,7 +188,7 @@ function [Nd,Wt]    = NumericNodesWeights(PolynomialOrder,GaussianPolynomial)
         % Bisection
         Bisection   = table(Roots(:,1),Roots(:,2),mean(Roots,2),zeros(RootLen-1,1),'VariableNames',{'LoBi','HiBi','Guess','F'});
         itr = 1; thr = Inf;
-        while thr > 10^(-12) && itr < 500
+        while thr > 10^(-16) && itr < 500
             Roots       = Fn(Bisection.Guess);
             Bisection.F = Roots{:,N+1};
             Bisection(mod(1:size(Bisection,1),2)==1,:).F = Bisection(mod(1:size(Bisection,1),2)==1,:).F*-1;
@@ -200,47 +200,39 @@ function [Nd,Wt]    = NumericNodesWeights(PolynomialOrder,GaussianPolynomial)
         end
         LastNode    = Bisection([1,end],:);
         [~,idx]     = min(abs(LastNode.F));
-        Nd       = sort([LastNode.Guess(idx);Bisection.Guess(2:(end-1))]);
+        Nodes       = sort([LastNode.Guess(idx);Bisection.Guess(2:(end-1))]);
         
-        % Calculate weights
         if T == 1 
-            temp = GaussianApproximation.NumericPolynomial(N+1,GaussianPolynomial,Nd);
-            Wt = (2*(1-Nd.^2))./((N+1)^2*temp{:,end}.^2);
+            temp = GaussianApproximation.NumericPolynomial(N+1,GaussianPolynomial,Nodes);
+            Weights = (2*(1-Nodes.^2))./((N+1)^2*temp{:,end}.^2);
         end
         if T ==3 
-            temp = GaussianApproximation.NumericPolynomial(N+1,GaussianPolynomial,Nd);
-            Wt = (2^(N+1)*factorial(N)*sqrt(pi))./(temp{:,end}.^2);
+            temp = GaussianApproximation.NumericPolynomial(N+1,GaussianPolynomial,Nodes);
+            Weights = (2^(N+1)*factorial(N)*sqrt(pi))./(temp{:,end}.^2);
         end
         if T == 4
-            temp = GaussianApproximation.NumericPolynomial(N+1,GaussianPolynomial,Nd);
-            Wt = Nd./((N+1)^2*temp{:,end}.^2);
+            temp = GaussianApproximation.NumericPolynomial(N+1,GaussianPolynomial,Nodes);
+            Weights = Nodes./((N+1)^2*temp{:,end}.^2);
         end
     end 
-end    
-%% 6. SYMBOLICINTERPOLATE
+end
+    
+%% 4. INTERPOLATE
+% Given Y, uses M nodes to interpolate an Nth order polynomial.
 %==========================================================================
-function I          = SymbolicInterpolate(YData,PolynomialOrder,GaussianPolynomial)
-    MNodes  = length(YData);
+function InterpolatedFunction = Interpolate(YData,PolynomialOrder,MNodes,GaussianPolynomial)
+    if length(YData) ~= MNodes
+        fprintf('Error: X and Y data do not match')
+        return
+    end
     N       = PolynomialOrder;
-    [X,~]   = GaussianApproximation.SymbolicNodesWeights(MNodes,GaussianPolynomial);
-    poly    = GaussianApproximation.SymbolicPolynomial(N,GaussianPolynomial);
+    [X,]    = GaussianApproximation.NodesWeights(MNodes,GaussianPolynomial);
+    poly    = GaussianApproximation.Polynomial(N,GaussianPolynomial);
     for i = 1:(N+1)
         Coef(i) = double(sum(YData.*subs(poly(i),X))/sum(subs(poly(i),X).^2));
     end
-    I = sum(Coef'.*poly);
+    InterpolatedFunction = sum(Coef.*poly);
 end
-%% 7. NUMERICINTERPOLATE
-%==========================================================================
-function I          = NumericInterpolate(YData,PolynomialOrder,GaussianPolynomial)
-    if isrow(YData); YData = YData'; end
-    MNodes  = length(YData);
-    N       = PolynomialOrder;
-    [X,~]   = GaussianApproximation.NumericNodesWeights(MNodes,GaussianPolynomial);
-    poly    = GaussianApproximation.NumericPolynomial(N,GaussianPolynomial,X);
-    for i = 1:(N+1)
-        Coef(i) = double(sum(YData.*poly{:,i})/sum(poly{:,i}.^2));
-    end    
-    I   = @(X) sum(table2array(GaussianApproximation.NumericPolynomial(N,GaussianPolynomial,X)).*Coef);
-end
+
     end
 end
