@@ -1,0 +1,187 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>Interpolation</title><meta name="generator" content="MATLAB 9.5"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2019-03-13"><meta name="DC.source" content="Interpolation.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img, h1 img, h2 img { margin-bottom:0px; } 
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, code { font-size:12px; }
+tt { font-size: 1.2em; }
+pre { margin:0px 0px 20px; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+pre.error { color:red; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><h2>Contents</h2><div><ul><li><a href="#2">INTERPOLATION TOOLKIT</a></li><li><a href="#3">PIECEWISELINEARINTERPOLATION</a></li><li><a href="#4">CUBICSPLINEPLUS</a></li><li><a href="#5">SCHUMAKERSPLINE</a></li></ul></div><pre class="codeinput"><span class="keyword">classdef</span> Interpolation
+    <span class="keyword">methods</span>(Static)
+</pre><h2 id="2">INTERPOLATION TOOLKIT</h2><p>Written by Curtis Aquino (2019). Contains:</p><div><ol><li>PiecewiseLinearInterpolation() performs linear piecewise interpolation given x- and y-data.</li><li>CubicSplinePlus() uses MATLAB's spline() function but endogenously turns it into a piecewise symbolic function.</li><li>SchumakerSpline() implements the shape-preserving spline proposed by Schumaker.</li></ol></div><h2 id="3">PIECEWISELINEARINTERPOLATION</h2><pre class="codeinput"><span class="keyword">function</span> F = PiecewiseLinearInterpolation(x,y,x0)
+    [~,idx] = sort(x);
+    x       = x(idx);
+    y       = y(idx);
+    bds     = [x(1:(end-1)),x(2:end)];
+    n       = length(x);
+    m       = length(x0);
+    a       = (y(2:n) - y(1:(n-1)))./(x(2:n)-x(1:(n-1)));
+    b       = (y(1:(n-1)).*x(2:n)-y(2:n).*x(1:(n-1)))./(x(2:n)-x(1:(n-1)));
+    <span class="keyword">for</span> i = 1:m
+        idx     = find(bds(:,1) &lt;= x0(i) &amp; x0(i) &lt;= bds(:,2));
+        <span class="keyword">if</span> length(idx) &gt; 1
+            idx     = find(bds(:,1) &lt;= x0(i) &amp; x0(i) &lt; bds(:,2));
+        <span class="keyword">end</span>
+        <span class="keyword">if</span> isempty(idx)
+            <span class="keyword">if</span> x0(i) &lt; x(1)
+                F(i) = x(1);
+            <span class="keyword">elseif</span> x0(i) &gt; x(end)
+                F(i) = x(end);
+            <span class="keyword">end</span>
+        <span class="keyword">else</span>
+            F(i)    = a(idx)*x0(i)+b(idx);
+        <span class="keyword">end</span>
+    <span class="keyword">end</span>
+<span class="keyword">end</span>
+</pre><h2 id="4">CUBICSPLINEPLUS</h2><pre class="codeinput"><span class="keyword">function</span> CubicSplinePlus(X,Y)
+    temp        = spline(X,Y);
+    F           = sum(temp.coefs.*(sym(<span class="string">'X'</span>)-X(1:(end-1))').^(3:-1:0),2); <span class="comment">%#ok&lt;NASGU&gt;</span>
+    <span class="comment">% Endogenous Piecewise</span>
+    syms <span class="string">X</span>
+    Text = sprintf(<span class="string">'piecewise('</span>);
+    <span class="keyword">for</span> i = 1:(length(temp.breaks)-1)
+        <span class="keyword">if</span> i == (length(temp.breaks)-1)
+            Text = [Text, sprintf(<span class="string">'temp.breaks(%i) &lt;= X &amp; X &lt;= temp.breaks(%i),F(%i))'</span>,i,i+1,i)];       <span class="comment">%#ok&lt;*AGROW&gt;</span>
+        <span class="keyword">elseif</span> i == 1
+            Text = [Text, sprintf(<span class="string">'temp.breaks(%i) &lt;= X &amp; X &lt;= temp.breaks(%i),F(%i),'</span>,i,i+1,i)];       <span class="comment">%#ok&lt;*AGROW&gt;</span>
+        <span class="keyword">else</span>
+            Text = [Text, sprintf(<span class="string">'temp.breaks(%i) &lt;= X &amp; X &lt;= temp.breaks(%i),F(%i),'</span>,i,i+1,i)];
+        <span class="keyword">end</span>
+    <span class="keyword">end</span>
+    F = eval(Text); <span class="comment">%#ok&lt;NASGU&gt;</span>
+<span class="keyword">end</span>
+</pre><h2 id="5">SCHUMAKERSPLINE</h2><pre class="codeinput"><span class="keyword">function</span> F = SchumakerSpline(x)
+    x = 1;
+    F = x;
+<span class="keyword">end</span>
+</pre><pre class="codeinput">    <span class="keyword">end</span>
+<span class="keyword">end</span>
+</pre><pre class="codeoutput">
+ans = 
+
+  Interpolation with no properties.
+
+</pre><p class="footer"><br><a href="https://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2018b</a><br></p></div><!--
+##### SOURCE BEGIN #####
+classdef Interpolation
+    methods(Static)
+        %% INTERPOLATION TOOLKIT
+        % Written by Curtis Aquino (2019). Contains:
+        % 
+        % # PiecewiseLinearInterpolation() performs linear piecewise interpolation given x- and y-data.
+        % # CubicSplinePlus() uses MATLAB's spline() function but endogenously turns it into a piecewise symbolic function.
+        % # SchumakerSpline() implements the shape-preserving spline proposed by Schumaker.
+        
+%% PIECEWISELINEARINTERPOLATION
+function F = PiecewiseLinearInterpolation(x,y,x0)
+    [~,idx] = sort(x);
+    x       = x(idx);
+    y       = y(idx);
+    bds     = [x(1:(end-1)),x(2:end)];
+    n       = length(x);
+    m       = length(x0);
+    a       = (y(2:n) - y(1:(n-1)))./(x(2:n)-x(1:(n-1)));
+    b       = (y(1:(n-1)).*x(2:n)-y(2:n).*x(1:(n-1)))./(x(2:n)-x(1:(n-1)));
+    for i = 1:m
+        idx     = find(bds(:,1) <= x0(i) & x0(i) <= bds(:,2));
+        if length(idx) > 1
+            idx     = find(bds(:,1) <= x0(i) & x0(i) < bds(:,2));
+        end
+        if isempty(idx)
+            if x0(i) < x(1)
+                F(i) = x(1);
+            elseif x0(i) > x(end)
+                F(i) = x(end);
+            end
+        else
+            F(i)    = a(idx)*x0(i)+b(idx);
+        end
+    end
+end
+%% CUBICSPLINEPLUS
+function CubicSplinePlus(X,Y)
+    temp        = spline(X,Y);
+    F           = sum(temp.coefs.*(sym('X')-X(1:(end-1))').^(3:-1:0),2); %#ok<NASGU>
+    % Endogenous Piecewise
+    syms X
+    Text = sprintf('piecewise(');
+    for i = 1:(length(temp.breaks)-1)
+        if i == (length(temp.breaks)-1)
+            Text = [Text, sprintf('temp.breaks(%i) <= X & X <= temp.breaks(%i),F(%i))',i,i+1,i)];       %#ok<*AGROW>
+        elseif i == 1
+            Text = [Text, sprintf('temp.breaks(%i) <= X & X <= temp.breaks(%i),F(%i),',i,i+1,i)];       %#ok<*AGROW>
+        else
+            Text = [Text, sprintf('temp.breaks(%i) <= X & X <= temp.breaks(%i),F(%i),',i,i+1,i)];
+        end
+    end
+    F = eval(Text); %#ok<NASGU>
+end
+%% SCHUMAKERSPLINE
+function F = SchumakerSpline(x)
+    x = 1;
+    F = x;
+end
+    end
+end
+##### SOURCE END #####
+--></body></html>

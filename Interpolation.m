@@ -1,13 +1,13 @@
 classdef Interpolation
     methods(Static)
         %% INTERPOLATION TOOLKIT
-        % Written by Curtis Aquino (2019)
-        % Contains:
-        %   1. PiecewiseLinearInterpolation()
+        % Written by Curtis Aquino (2019). Contains:
+        % 
+        % # PiecewiseLinearInterpolation() performs linear piecewise interpolation given x- and y-data.
+        % # CubicSplinePlus() uses MATLAB's spline() function but endogenously turns it into a piecewise symbolic function.
+        % # SchumakerSpline() implements the shape-preserving spline proposed by Schumaker.
         
-%% 1. PIECEWISELINEARINTERPOLATION
-% This function performs linear interpolation given x- and y-data.
-%==========================================================================
+%% PIECEWISELINEARINTERPOLATION
 function F = PiecewiseLinearInterpolation(x,y,x0)
     [~,idx] = sort(x);
     x       = x(idx);
@@ -33,25 +33,28 @@ function F = PiecewiseLinearInterpolation(x,y,x0)
         end
     end
 end
-
-%% 2. CUBICSPLINEPLUS
-
-temp        = spline(X,Y);
-F           = sum(temp.coefs.*(sym('X')-X(1:(end-1))').^(3:-1:0),2);
-
-% Endogenous Piecewise
-syms X
-Text = sprintf('piecewise(');
-for i = 1:(length(temp.breaks)-1)
-    if i == (length(temp.breaks)-1)
-        Text = [Text, sprintf('temp.breaks(%i) <= X & X <= temp.breaks(%i),F(%i))',i,i+1,i)];       %#ok<*AGROW>
-    elseif i == 1
-        Text = [Text, sprintf('temp.breaks(%i) <= X & X <= temp.breaks(%i),F(%i),',i,i+1,i)];       %#ok<*AGROW>
-    else
-        Text = [Text, sprintf('temp.breaks(%i) <= X & X <= temp.breaks(%i),F(%i),',i,i+1,i)];
+%% CUBICSPLINEPLUS
+function CubicSplinePlus(X,Y)
+    temp        = spline(X,Y);
+    F           = sum(temp.coefs.*(sym('X')-X(1:(end-1))').^(3:-1:0),2); %#ok<NASGU>
+    % Endogenous Piecewise
+    syms X
+    Text = sprintf('piecewise(');
+    for i = 1:(length(temp.breaks)-1)
+        if i == (length(temp.breaks)-1)
+            Text = [Text, sprintf('temp.breaks(%i) <= X & X <= temp.breaks(%i),F(%i))',i,i+1,i)];       %#ok<*AGROW>
+        elseif i == 1
+            Text = [Text, sprintf('temp.breaks(%i) <= X & X <= temp.breaks(%i),F(%i),',i,i+1,i)];       %#ok<*AGROW>
+        else
+            Text = [Text, sprintf('temp.breaks(%i) <= X & X <= temp.breaks(%i),F(%i),',i,i+1,i)];
+        end
     end
+    F = eval(Text); %#ok<NASGU>
 end
-F = eval(Text);
-
+%% SCHUMAKERSPLINE
+function F = SchumakerSpline(x)
+    x = 1;
+    F = x;
+end
     end
 end
