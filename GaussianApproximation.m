@@ -4,45 +4,15 @@ classdef GaussianApproximation
         %
         % Written by Curtis Aquino (2019). Contains:
         %
-        %   1. Initialization():
-        %   This function is required for all functions to run.
-        %
-        %   2. SymbolicPolynomial()
-        %   Creates symbolic expressions for the first N polynomials for 
-        %   a class of Gaussian polynomials. For Gaussian polynomials 
-        %   without analytical expressions, this will become slow for 
-        %   high order polynomials.
-        %
-        %   3. NumericPolynomial()
-        %   Returns numerical solutions for the first N polynomials for a 
-        %   class of Gaussian polynomials evaluated at a set of points. 
-        %   This method is very fast for even high order polynomials as no
-        %   symbolic calculations are performed. 
-        %
-        %   4. SymoblicNodesWeights()
-        %   Finds the nodes and weights for a variety of Gaussian 
-        %   polynomials using MATLAB's symbolic solver. It is very 
-        %   accurate, but slow for high order polynomials.
-        %
-        %   5. NumericNodesWeights()
-        %   Finds the nodes and weights for a variety of Gaussian 
-        %   polynomials numerically. This method is very fast for even 
-        %   high order polynomials as no symbolic calculations are 
-        %   performed. This is done at the expense of accuracy, 
-        %   particularly for the weights. 
-
-        %   6. SymbolicInterpolate()
-        %   Interpolates the Y data using M nodes by an Nth order
-        %   polynomial for a variety of Gaussian polynomials. This uses a
-        %   slow but accurate symbolic method.
-        %
-        %   7. NumericInterpolate()
-        %   Interpolates the Y data using M nodes by an Nth order
-        %   polynomial for a variety of Gaussian polynomials. This uses a
-        %   fast but inaccurate numeric method.
-        
+        % # Initializiation() is required for all functions to run.
+        % # SymbolicPolynomial() creates symbolic expressions for the first N polynomials for a class of Gaussian polynomials. 
+        % # NumericPolynomial() returns numerical solutions for the first N polynomials for a class of Gaussian polynomials evaluated at a set of points. 
+        % # SymbolicNodesWeights() finds the nodes and weights for a variety of Gaussian polynomials using MATLAB's symbolic solver.
+        % # NumericNodesWeights() finds the nodes and weights for a variety of Gaussian polynomials numerically.
+        % # SymbolicInterpolate() interpolates the Y data using M nodes by an Nth order polynomial for a variety of Gaussian polynomials.
+        % # NumericInterpolate() interpolates the Y data using M nodes by an Nth order polynomial for a variety of Gaussian polynomials.
+   
 %% 1. INITIALIZATION      
-%==========================================================================
 function [T,Sp]     = Initialization(GaussianPolynomial)
     Types   = {
             'Gauss-Legendre';...
@@ -54,7 +24,6 @@ function [T,Sp]     = Initialization(GaussianPolynomial)
     Sp   = length(Types);
 end
 %% 2. SYMBOLICPOLYNOMIAL
-%==========================================================================
 function P          = SymbolicPolynomial(PolynomialOrder,GaussianPolynomial)
     
     [T,~]           = GaussianApproximation.Initialization(GaussianPolynomial);
@@ -88,7 +57,6 @@ function P          = SymbolicPolynomial(PolynomialOrder,GaussianPolynomial)
     end
 end
 %% 3. NUMERICPOLYNOMIAL
-%==========================================================================
 function P          = NumericPolynomial(PolynomialOrder,GaussianPolynomial,X)
     
     % Initialization
@@ -134,7 +102,6 @@ function P          = NumericPolynomial(PolynomialOrder,GaussianPolynomial,X)
     P  = array2table(P,'VariableNames',ColName);
 end
 %% 4. SYMBOLICNODESWEIGHTS
-%==========================================================================
 function [Nd,Wt]    = SymbolicNodesWeights(PolynomialOrder,GaussianPolynomial)
     N       = PolynomialOrder;
     [T,~]   = GaussianApproximation.Initialization(GaussianPolynomial);
@@ -156,7 +123,6 @@ function [Nd,Wt]    = SymbolicNodesWeights(PolynomialOrder,GaussianPolynomial)
     end
 end
 %% 5. NUMERICNODESWEIGHTS
-%==========================================================================
 function [Nd,Wt]    = NumericNodesWeights(PolynomialOrder,GaussianPolynomial)
     
     N       = PolynomialOrder;
@@ -245,7 +211,6 @@ function [Nd,Wt]    = NumericNodesWeights(PolynomialOrder,GaussianPolynomial)
     end 
 end    
 %% 6. SYMBOLICINTERPOLATE
-%==========================================================================
 function I          = SymbolicInterpolate(YData,PolynomialOrder,GaussianPolynomial)
     MNodes  = length(YData);
     N       = PolynomialOrder;
@@ -257,7 +222,6 @@ function I          = SymbolicInterpolate(YData,PolynomialOrder,GaussianPolynomi
     I = sum(Coef'.*poly);
 end
 %% 7. NUMERICINTERPOLATE
-%==========================================================================
 function I          = NumericInterpolate(YData,PolynomialOrder,GaussianPolynomial)
     if isrow(YData); YData = YData'; end
     MNodes  = length(YData);

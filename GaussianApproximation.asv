@@ -3,7 +3,14 @@ classdef GaussianApproximation
         %% GAUSSIANAPPROXIMATION TOOLKIT
         %
         % Written by Curtis Aquino (2019). Contains:
-        %
+        %%
+        % 
+        % # ITEM1
+        % # ITEM2
+        % 
+        
+        
+        
         %   1. Initialization():
         %   This function is required for all functions to run.
         %
@@ -28,8 +35,7 @@ classdef GaussianApproximation
         %   Finds the nodes and weights for a variety of Gaussian 
         %   polynomials numerically. This method is very fast for even 
         %   high order polynomials as no symbolic calculations are 
-        %   performed. This is done at the expense of accuracy, 
-        %   particularly for the weights. 
+        %   performed. 
 
         %   6. SymbolicInterpolate()
         %   Interpolates the Y data using M nodes by an Nth order
@@ -38,11 +44,9 @@ classdef GaussianApproximation
         %
         %   7. NumericInterpolate()
         %   Interpolates the Y data using M nodes by an Nth order
-        %   polynomial for a variety of Gaussian polynomials. This uses a
-        %   fast but inaccurate numeric method.
+        %   polynomial for a variety of Gaussian polynomials.
         
 %% 1. INITIALIZATION      
-%==========================================================================
 function [T,Sp]     = Initialization(GaussianPolynomial)
     Types   = {
             'Gauss-Legendre';...
@@ -54,7 +58,6 @@ function [T,Sp]     = Initialization(GaussianPolynomial)
     Sp   = length(Types);
 end
 %% 2. SYMBOLICPOLYNOMIAL
-%==========================================================================
 function P          = SymbolicPolynomial(PolynomialOrder,GaussianPolynomial)
     
     [T,~]           = GaussianApproximation.Initialization(GaussianPolynomial);
@@ -88,7 +91,6 @@ function P          = SymbolicPolynomial(PolynomialOrder,GaussianPolynomial)
     end
 end
 %% 3. NUMERICPOLYNOMIAL
-%==========================================================================
 function P          = NumericPolynomial(PolynomialOrder,GaussianPolynomial,X)
     
     % Initialization
@@ -134,7 +136,6 @@ function P          = NumericPolynomial(PolynomialOrder,GaussianPolynomial,X)
     P  = array2table(P,'VariableNames',ColName);
 end
 %% 4. SYMBOLICNODESWEIGHTS
-%==========================================================================
 function [Nd,Wt]    = SymbolicNodesWeights(PolynomialOrder,GaussianPolynomial)
     N       = PolynomialOrder;
     [T,~]   = GaussianApproximation.Initialization(GaussianPolynomial);
@@ -156,10 +157,9 @@ function [Nd,Wt]    = SymbolicNodesWeights(PolynomialOrder,GaussianPolynomial)
     end
 end
 %% 5. NUMERICNODESWEIGHTS
-%==========================================================================
 function [Nd,Wt]    = NumericNodesWeights(PolynomialOrder,GaussianPolynomial)
     
-N       = PolynomialOrder;
+    N       = PolynomialOrder;
     [T,~]   = GaussianApproximation.Initialization(GaussianPolynomial);
     Fn      = @(X) GaussianApproximation.NumericPolynomial(N,GaussianPolynomial,X);
     
@@ -220,12 +220,12 @@ N       = PolynomialOrder;
         end
         Nd       = Bisection.Guess;
         
-        % max 10^(-x)
+        % Finds unique values within machine precision 10^(-16)
         for i = 16:-1:1
             Ndtest  = uniquetol(Nd,10^(-i));
             if length(Ndtest) == N
                Nd = sort(Ndtest);
-                return
+               i = 1;
             end
         end
         
@@ -245,7 +245,6 @@ N       = PolynomialOrder;
     end 
 end    
 %% 6. SYMBOLICINTERPOLATE
-%==========================================================================
 function I          = SymbolicInterpolate(YData,PolynomialOrder,GaussianPolynomial)
     MNodes  = length(YData);
     N       = PolynomialOrder;
@@ -257,7 +256,6 @@ function I          = SymbolicInterpolate(YData,PolynomialOrder,GaussianPolynomi
     I = sum(Coef'.*poly);
 end
 %% 7. NUMERICINTERPOLATE
-%==========================================================================
 function I          = NumericInterpolate(YData,PolynomialOrder,GaussianPolynomial)
     if isrow(YData); YData = YData'; end
     MNodes  = length(YData);
