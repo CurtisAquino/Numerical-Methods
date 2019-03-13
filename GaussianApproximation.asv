@@ -159,7 +159,7 @@ end
 %==========================================================================
 function [Nd,Wt]    = NumericNodesWeights(PolynomialOrder,GaussianPolynomial)
     
-    N       = PolynomialOrder;
+N       = PolynomialOrder;
     [T,~]   = GaussianApproximation.Initialization(GaussianPolynomial);
     Fn      = @(X) GaussianApproximation.NumericPolynomial(N,GaussianPolynomial,X);
     
@@ -220,12 +220,12 @@ function [Nd,Wt]    = NumericNodesWeights(PolynomialOrder,GaussianPolynomial)
         end
         Nd       = Bisection.Guess;
         
-        % Finds unique values within machine precision 10^(-16)
+        % max 10^(-x)
         for i = 16:-1:1
             Ndtest  = uniquetol(Nd,10^(-i));
             if length(Ndtest) == N
                Nd = sort(Ndtest);
-               i = 1;
+                return
             end
         end
         

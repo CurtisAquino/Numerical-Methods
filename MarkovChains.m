@@ -4,6 +4,7 @@ classdef MarkovChains
 function [Pi,Y] = Rouwenhorst(N,shockvar,p,q)
             % Given zt = rho z_{t-1} + e_t
             
+            % 2p = 1+rho 
             %N = 4; shockvar = 1; p = (1+0.975)/2;
 
             % Symmetry is default
@@ -23,12 +24,12 @@ function [Pi,Y] = Rouwenhorst(N,shockvar,p,q)
             Pi = Pi{end};
             
             % State space
-            Psi= sqrt(N-1)*sqrt(shockvar);
+            Psi= sqrt(N-1)*sqrt(shockvar)/(1-(2*p-1)^2);
             Y = linspace(-Psi,Psi,N);
             
 end
     
-function Lam = InvariantRouwenhorst(N,shockvar,p,q)
+function Lam = InvariantAR1(N,shockvar,p,q)
     
     % Symmetry is default
     if nargin < 4; q = p; end
