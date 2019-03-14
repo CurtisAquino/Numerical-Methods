@@ -4,146 +4,147 @@ classdef GaussianApproximation
         %
         % Written by Curtis Aquino (2019). Contains:
         %
-        % # Initializiation() is required for all functions to run.
-        % # SymbolicPolynomial() creates symbolic expressions for the first N polynomials for a class of Gaussian polynomials. 
-        % # NumericPolynomial() returns numerical solutions for the first N polynomials for a class of Gaussian polynomials evaluated at a set of points. 
-        % # SymbolicNodesWeights() finds the nodes and weights for a variety of Gaussian polynomials using MATLAB's symbolic solver.
-        % # NumericNodesWeights() finds the nodes and weights for a variety of Gaussian polynomials numerically.
-        % # SymbolicInterpolate() interpolates the Y data using M nodes by an Nth order polynomial for a variety of Gaussian polynomials.
-        % # NumericInterpolate() interpolates the Y data using M nodes by an Nth order polynomial for a variety of Gaussian polynomials.
+        % # Initializiation() is required for all functions to run. 
+        % # Polynomial() returns numerical solutions for the first N polynomials for a class of Gaussian polynomials evaluated at a set of points. If no points are entered, the symbolic expression for the Nth Gaussian polynomial is returned.
+        % # NodesWeights() finds the nodes and weights for a variety of Gaussian polynomials numerically.
+        % # Interpolate() interpolates Y data using an Nth order polynomial for a variety of Gaussian polynomials.
    
 %% 1. INITIALIZATION      
-function [T,Sp]     = Initialization(GaussianPolynomial)
+function F          = Initialization(GaussianPolynomial)
     Types   = {
             'Gauss-Legendre';...
             'Gauss-Chebyshev';...
             'Gauss-Hermite';...
             'Gauss-Laguerre'
-            };
-    T       = find(strcmp(GaussianPolynomial,Types));
-    Sp   = length(Types);
+            };        
+    F       = find(strcmp(GaussianPolynomial,Types));
+    if isempty(F); fprintf('Invalid polynomial name'); return; end
 end
-%% 2. SYMBOLICPOLYNOMIAL
-function P          = SymbolicPolynomial(PolynomialOrder,GaussianPolynomial)
+%% 2. POLYNOMIAL
+function F          = Polynomial(PolynomialOrder,GaussianPolynomial,X)
+    T               = GaussianApproximation.Initialization(GaussianPolynomial);
     
-    [T,~]           = GaussianApproximation.Initialization(GaussianPolynomial);
-    N               = PolynomialOrder+1;
-    X               = sym('X','real');
-    P      = sym(zeros(N,1));
-    P(1)   = 1;
-    
-    if T == 1
-       Coef     = [[0,0,X.*(2.*(1:N)+1)./(2:(N+1))];[0,0,(1:N)./(2:(N+1))]];
-       P(2) = X;
-    end 
-    
-    if T == 2
-       Coef     = [[0,0,repmat(2*X,1,N)]; [0,0,ones(1,N)]];
-       P(2) = X;
-    end
+    % ========
+    % Symbolic
+    % ========
         
-    if T == 3
-       Coef     = [[0,0,repmat(2*X,1,N)]; [0,0,2*(1:N)]];
-       P(2) = 2*X;
-    end
+    % The symbolic formulation is easy because each polynomial has an
+    % explicit form, but this is unreliable for high-order polynomials.
     
-    if T == 4
-       Coef     = [[0,0,(2.*(1:N)+1-X)./(2:(N+1))];[0,0,(1:N)./(2:(N+1))]];
-       P(2) = 1-X;
-    end
-    
-    for i = 3:N
-       P(i) =  Coef(1,i)*P(i-1)-Coef(2,i)*P(i-2);
-    end
-end
-%% 3. NUMERICPOLYNOMIAL
-function P          = NumericPolynomial(PolynomialOrder,GaussianPolynomial,X)
-    
-    % Initialization
-    [T,~]           = GaussianApproximation.Initialization(GaussianPolynomial);
-    N               = PolynomialOrder+1;
-    XLen            = length(X);
-    P(:,1) = ones(XLen,1);
-    
-    % Fixes input size
-    if isrow(X); X = X'; end
-    
-    % Initialize each Gaussian polynomial
-    if T == 1
-       Coef(:,:,1) = [zeros(XLen,2),(X.*(2.*(1:N)+1))./(2:(N+1))]; 
-       Coef(:,:,2) = repmat([0,0,(1:N)./(2:(N+1))],XLen,1);
-       P(:,2) = X;
-    end 
-    if T == 2
-       Coef(:,:,1) = [zeros(XLen,2),repmat(2*X,1,N)];
-       Coef(:,:,2) = repmat([0,0,ones(1,N)],XLen,1);
-       P(:,2) = X;
-    end
-    if T == 3
-       Coef(:,:,1) = [zeros(XLen,2),repmat(2*X,1,N)];
-       Coef(:,:,2) = repmat([0,0,2*(1:N)],XLen,1);
-       P(:,2) = 2*X;
-    end
-    if T == 4
-       Coef(:,:,1) = [zeros(XLen,2),(2.*(1:N)+1-X)./(2:(N+1))]; 
-       Coef(:,:,2) = repmat([0,0,(1:N)./(2:(N+1))],XLen,1);
-       P(:,2) = 1-X;
-    end
-    
-    % Recursion relation
-    for i = 3:N
-       P(:,i) = Coef(:,i,1).*P(:,i-1)-Coef(:,i,2).*P(:,i-2);
-    end
-    
-    % Output table
-    for i = 1:N
-        ColName{i} = sprintf('Degree%i',i-1); %#ok<AGROW>
-    end
-    P  = array2table(P,'VariableNames',ColName);
-end
-%% 4. SYMBOLICNODESWEIGHTS
-function [Nd,Wt]    = SymbolicNodesWeights(PolynomialOrder,GaussianPolynomial)
-    N       = PolynomialOrder;
-    [T,~]   = GaussianApproximation.Initialization(GaussianPolynomial);
-    if T == 2
-        Nd       = -cos((2*(1:N)-1)*pi/(2*N))';
-        Wt       = repmat(pi/N,N,1);
-    else
-        Var     = GaussianApproximation.SymbolicPolynomial(N+1,GaussianPolynomial);
-        Var     = Var(end-1);
-        Jac     = jacobian(Var);
-        Nd       = real(double(vpasolve(Var)));    
-        if T == 1 
-            Wt       = 2./double((1-Nd.^2).*subs(Jac,Nd).^2);
-        elseif T ==3 
-            Wt       = double((2^(N+1)*factorial(N)*sqrt(pi))./(subs(Jac,Nd).^2));
-        elseif T == 4
-            Wt       = double(1./(Nd.*(subs(Jac,Nd).^2)));
+    if nargin < 3
+        n           = PolynomialOrder;
+        if T == 1
+            m               = 0:n;
+            temp1           = 1/2^n;
+            temp2           = factorial(n).^2;
+            temp3           = (factorial(m).*factorial(n-m)).^2;
+            temp4           = ((sym('X')-1).^(n-m)).*(sym('X')+1).^m;
+            F               = simplify(temp1*sum((temp2.*temp4)./temp3));
         end
+        if T == 2
+            m               = 0:floor(n/2);
+            temp1           = n/2;
+            temp2           = ((-1).^m).*factorial(n-m-1).*2.^(n-2*m);
+            temp3           = factorial(m).*factorial(n-2*m);
+            temp4           = sym('X').^(n-2*m);
+            F               = temp1*sum((temp2.*temp4)./temp3);
+        end
+        if T == 3
+            m               = 0:floor(n/2);
+            temp1           = factorial(n);
+            temp2           = ((-1).^m).*2.^(n-2*m);
+            temp3           = factorial(m).*factorial(n-2*m);
+            temp4           = sym('X').^(n-2*m);
+            F               = temp1*sum((temp2.*temp4)./temp3);
+        end
+        if T == 4
+            m               = 0:n;
+            temp1           = 1;
+            temp2           = ((-1).^m).*factorial(n);
+            temp3           = (factorial(m).^2).*factorial(n-m);
+            temp4           = sym('X').^m;
+            F               = temp1*sum((temp2.*temp4)./temp3);
+        end
+    else
+        
+        % =========
+        % Recursion
+        % =========
+        
+        % The recursive formulation is generally more accurate, so
+        % numerical solutions should use this method.
+        
+        n               = PolynomialOrder+1;
+        XLen            = length(X);
+        if isrow(X); X = X'; end
+        F(:,1) = ones(XLen,1);
+        if T == 1
+            Coef(:,:,1) = [zeros(XLen,2),(X.*(2.*(1:n)+1))./(2:(n+1))]; 
+            Coef(:,:,2) = repmat([0,0,(1:n)./(2:(n+1))],XLen,1);
+            F(:,2) = X;
+        end
+        if T == 2
+            Coef(:,:,1) = [zeros(XLen,2),repmat(2*X,1,n)];
+            Coef(:,:,2) = repmat([0,0,ones(1,n)],XLen,1);
+            F(:,2) = X;
+        end
+        if T == 3
+            Coef(:,:,1) = [zeros(XLen,2),repmat(2*X,1,n)];
+            Coef(:,:,2) = repmat([0,0,2*(1:n)],XLen,1);
+            F(:,2) = 2*X;
+        end
+        if T == 4
+            Coef(:,:,1) = [zeros(XLen,2),(2.*(1:n)+1-X)./(2:(n+1))]; 
+            Coef(:,:,2) = repmat([0,0,(1:n)./(2:(n+1))],XLen,1);
+            F(:,2) = 1-X;
+        end
+        for i = 3:n
+            F(:,i) = Coef(:,i,1).*F(:,i-1)-Coef(:,i,2).*F(:,i-2);
+        end
+        for i = 1:n
+            ColName{i} = sprintf('Degree%i',i-1); %#ok<AGROW>
+        end
+        F  = array2table(F,'VariableNames',ColName);
     end
 end
-%% 5. NUMERICNODESWEIGHTS
-function [Nd,Wt]    = NumericNodesWeights(PolynomialOrder,GaussianPolynomial)
+%% 3. NODESWEIGHTS
+function F          = NodesWeights(PolynomialOrder,GaussianPolynomial)
     
-    N       = PolynomialOrder;
-    [T,~]   = GaussianApproximation.Initialization(GaussianPolynomial);
-    Fn      = @(X) GaussianApproximation.NumericPolynomial(N,GaussianPolynomial,X);
+    % ==============
+    % Initialization 
+    % ==============
+    n       = PolynomialOrder;
+    T       = GaussianApproximation.Initialization(GaussianPolynomial);
+    Fn      = @(X) GaussianApproximation.Polynomial(n,GaussianPolynomial,X);
+    
+    % ================
+    % Determine Ranges
+    % ================
+    
+    % The range of each set of nodes are bounded, which can be proven.
     
     if T == 2
-        Nd      = -cos((2*(1:N)-1)*pi/(2*N))';
-        Wt      = repmat(pi/N,N,1);
+        Nd      = -cos((2*(1:n)-1)*pi/(2*n))';
+        Wt      = repmat(pi/n,n,1);
     else
         if T == 1
             Range       = [-1,1];
         end
         if T == 3
-            Range       = [-sqrt(4*N+1),sqrt(4*N+1)];
+            Range       = [-sqrt(4*n+1),sqrt(4*n+1)];
         end
         if T == 4
-            Range       = [0,N+(N-1)*sqrt(N)];
+            Range       = [0,n+(n-1)*sqrt(n)];
         end
+    
+        % =========
+        % Root Grid
+        % =========
         
-        % Find root grid
+        % This will build a very fine grid over the range of the nodes and
+        % save all points in which the value of the polynomial changes
+        % signs.
+        
         GridPrecision = 100000;
         IntBi   = linspace(Range(1),Range(2),GridPrecision);
         Roots   = Fn(IntBi);
@@ -151,7 +152,14 @@ function [Nd,Wt]    = NumericNodesWeights(PolynomialOrder,GaussianPolynomial)
         SgnChg  = [diff(sign(Roots)) ~= 0];
         Grid    = [[Range(1),IntBi(SgnChg)]',[IntBi(SgnChg),Range(2)]'];
         
-        % Find root subgrid
+        % ============
+        % Root Subgrid
+        % ============
+        
+        % This will build a very fine subgrid over each range where a root
+        % is known to be. This is used with the goal of finding the root to
+        % a machine epsilon degree of accuracy.
+        
         SubGridPrec     = 5000;
         SGrid           = [];
         for j = 1:size(Grid,1)
@@ -160,7 +168,6 @@ function [Nd,Wt]    = NumericNodesWeights(PolynomialOrder,GaussianPolynomial)
             Roots   = Roots{:,end};
             SgnChg  = [diff(sign(Roots)) ~= 0;false];
             Idx     = find(SgnChg == 1);
-            
             if Idx == 1
                 SGrid   = [SGrid;IntBi([find(SgnChg == 1),find(SgnChg == 1)+1])];
             elseif Idx == SubGridPrec
@@ -170,12 +177,18 @@ function [Nd,Wt]    = NumericNodesWeights(PolynomialOrder,GaussianPolynomial)
             end
         end
         
+        % =========
         % Bisection
+        % =========
+        
+        % Given the subgrids, this will vectorize a bisection over each
+        % range to find each node.
+        
         Bisection   = table(SGrid(:,1),SGrid(:,2),mean(SGrid,2),zeros(size(SGrid,1),1),'VariableNames',{'LoBi','HiBi','Guess','F'});
         itr = 1; thr1 = Inf; thr2 = Inf;
         while thr1 > 10^(-16) && thr2 > 10^(-16) && itr < 5000
             Roots       = Fn(Bisection.Guess);
-            Bisection.F = Roots{:,N+1};
+            Bisection.F = Roots{:,n+1};
             Bisection(mod(1:size(Bisection,1),2)==1,:).F = Bisection(mod(1:size(Bisection,1),2)==1,:).F*-1;
             Bisection.LoBi(Bisection.F<0) = Bisection.Guess(Bisection.F<0);
             Bisection.HiBi(Bisection.F>0) = Bisection.Guess(Bisection.F>0);
@@ -186,52 +199,63 @@ function [Nd,Wt]    = NumericNodesWeights(PolynomialOrder,GaussianPolynomial)
         end
         Nd       = Bisection.Guess;
         
-        % Finds unique values within machine precision 10^(-16)
+        % ======
+        % Unique
+        % ======
+        
+        % Since nodes are determined by 
+        
         for i = 16:-1:1
             Ndtest  = uniquetol(Nd,10^(-i));
-            if length(Ndtest) == N
+            if length(Ndtest) == n
                Nd = sort(Ndtest);
                i = 1;
             end
         end
         
-        % Calculate weights
+        % =======
+        % Weights
+        % =======
+        
+        % Weights have an explicit functional form, found online.
+        
+        temp = GaussianApproximation.Polynomial(n+1,GaussianPolynomial,Nd);
         if T == 1 
-            temp = GaussianApproximation.NumericPolynomial(N+1,GaussianPolynomial,Nd);
-            Wt = (2*(1-Nd.^2))./((N+1)^2*temp{:,end}.^2);
+            Wt = (2*(1-Nd.^2))./((n+1)^2*temp{:,end}.^2);
         end
         if T ==3 
-            temp = GaussianApproximation.NumericPolynomial(N+1,GaussianPolynomial,Nd);
-            Wt = (2^(N+1)*factorial(N)*sqrt(pi))./(temp{:,end}.^2);
+            Wt = (2^(n+1)*factorial(n)*sqrt(pi))./(temp{:,end}.^2);
         end
         if T == 4
-            temp = GaussianApproximation.NumericPolynomial(N+1,GaussianPolynomial,Nd);
-            Wt = Nd./((N+1)^2*temp{:,end}.^2);
+            Wt = Nd./((n+1)^2*temp{:,end}.^2);
         end
-    end 
-end    
-%% 6. SYMBOLICINTERPOLATE
-function I          = SymbolicInterpolate(YData,PolynomialOrder,GaussianPolynomial)
-    MNodes  = length(YData);
-    N       = PolynomialOrder;
-    [X,~]   = GaussianApproximation.SymbolicNodesWeights(MNodes,GaussianPolynomial);
-    poly    = GaussianApproximation.SymbolicPolynomial(N,GaussianPolynomial);
-    for i = 1:(N+1)
-        Coef(i) = double(sum(YData.*subs(poly(i),X))/sum(subs(poly(i),X).^2));
     end
-    I = sum(Coef'.*poly);
-end
-%% 7. NUMERICINTERPOLATE
-function I          = NumericInterpolate(YData,PolynomialOrder,GaussianPolynomial)
+    
+    % =======
+    % Results
+    % =======
+   
+    F = table(Nd,Wt,'VariableNames',{'Nodes','Weights'});
+    
+    % Uncomment for plots!
+%     subplot(1,2,1)
+%     plot(1:n,F.Nodes)
+%     title('Nodes')
+%     subplot(1,2,2)
+%     plot(1:n,F.Weights)
+%     title('Weights')
+end    
+%% 4. INTERPOLATE
+function F          = Interpolate(YData,PolynomialOrder,GaussianPolynomial)
     if isrow(YData); YData = YData'; end
     MNodes  = length(YData);
     N       = PolynomialOrder;
-    [X,~]   = GaussianApproximation.NumericNodesWeights(MNodes,GaussianPolynomial);
-    poly    = GaussianApproximation.NumericPolynomial(N,GaussianPolynomial,X);
+    [X,~]   = GaussianApproximation.NodesWeights(MNodes,GaussianPolynomial);
+    poly    = GaussianApproximation.Polynomial(N,GaussianPolynomial,X);
     for i = 1:(N+1)
         Coef(i) = double(sum(YData.*poly{:,i})/sum(poly{:,i}.^2));
     end    
-    I   = @(X) sum(table2array(GaussianApproximation.NumericPolynomial(N,GaussianPolynomial,X)).*Coef);
+    F   = @(X) sum(table2array(GaussianApproximation.NumericPolynomial(N,GaussianPolynomial,X)).*Coef);
 end
     end
 end
