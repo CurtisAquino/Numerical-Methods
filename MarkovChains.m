@@ -41,6 +41,17 @@ function Lam = InvariantAR1(N,shockvar,p,q)
     end
     
 end
-        
+   
+function S      = MarkovSummary(P)
+   
+    if sum(reshape(expm(P),[],1)>0) == numel(P)
+        sprintf('This Markov Chain is irreducible - regardless of the present state, we can reach any other state in finite time.') 
+    else
+        sprintf('This Markov Chain is not irreducible - given the present state, we may not reach every other state in finite time.')
+    end
+    
+end
+
+
     end
 end

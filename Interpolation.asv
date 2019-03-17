@@ -1,13 +1,13 @@
 classdef Interpolation
     methods(Static)
         %% INTERPOLATION TOOLKIT
-        %
         % Written by Curtis Aquino (2019). Contains:
         % 
         % # PiecewiseLinearInterpolation() performs linear piecewise interpolation given x- and y-data.
-        % # ButlandSchumakerSpline() implements the shape-preserving spline described in Iqbar (1993).
+        % # CubicSplinePlus() uses MATLAB's spline() function but endogenously turns it into a piecewise symbolic function.
+        % # SchumakerSpline() implements the shape-preserving spline proposed by Schumaker.
         
-%% 1. PIECEWISELINEARINTERPOLATION
+%% PIECEWISELINEARINTERPOLATION
 function F = PiecewiseLinearInterpolation(x,y,x0)
     [~,idx] = sort(x);
     x       = x(idx);
@@ -33,8 +33,27 @@ function F = PiecewiseLinearInterpolation(x,y,x0)
         end
     end
 end
-%% 2. BUTLANDSCHUMAKERSPLINE
-function F = ButlandSchumakerSpline(X,Y,X0)
+%% CUBICSPLINEPLUS
+function CubicSplinePlus(X,Y)
+    temp        = spline(X,Y);
+    F           = sum(temp.coefs.*(sym('X')-X(1:(end-1))').^(3:-1:0),2); %#ok<NASGU>
+    % Endogenous Piecewise
+    syms X
+    Text = sprintf('piecewise(');
+    for i = 1:(length(temp.breaks)-1)
+        if i == (length(temp.breaks)-1)
+            Text = [Text, sprintf('temp.breaks(%i) <= X & X <= temp.breaks(%i),F(%i))',i,i+1,i)];       %#ok<*AGROW>
+        elseif i == 1
+            Text = [Text, sprintf('temp.breaks(%i) <= X & X <= temp.breaks(%i),F(%i),',i,i+1,i)];       %#ok<*AGROW>
+        else
+            Text = [Text, sprintf('temp.breaks(%i) <= X & X <= temp.breaks(%i),F(%i),',i,i+1,i)];
+        end
+    end
+    F = eval(Text); %#ok<NASGU>
+end
+%% SCHUMAKERSPLINE
+function F = SchumakerSpline(X,Y,X0)
+    
     % Fixes user inputs
     if isrow(X0); X0 = X0'; end
     if isrow(X); X = X'; end
@@ -52,12 +71,12 @@ function F = ButlandSchumakerSpline(X,Y,X0)
     d       = [d1;d;dn];
     
     % Builds what Iqbal (1992) calls xi and dbar
-    xi1c    = ((d(2:end)-del).*(d(1:(end-1))-del))<0;
-    xi2c    = ((d(2:end)-del).*(d(1:(end-1))-del))>=0;
-    xi1     = X(2:end)+(d(1:(end-1))-del).*(X(2:end)-X(1:(end-1)))./(d(2:end)-d(1:(end-1)));
+    xi1c    = ((d(2:end)-delta).*(d(1:(end-1))-delta))<0;
+    xi2c    = ((d(2:end)-delta).*(d(1:(end-1))-delta))>=0;
+    xi1     = X(2:end)+(d(1:(end-1))-delta).*(X(2:end)-X(1:(end-1)))./(d(2:end)-d(1:(end-1)));
     xi2     = (X(1:(end-1))+X(2:end))/2;
     xi      = xi1.*xi1c+xi2.*xi2c;
-    dbar    = (2*del-d(2:end))+(d(2:end)-d(1:(end-1))).*(xi-X(1:(end-1)))./(X(2:end)-X(1:(end-1)));
+    dbar    = (2*delta-d(2:end))+(d(2:end)-d(1:(end-1))).*(xi-X(1:(end-1)))./(X(2:end)-X(1:(end-1)));
     
     % Builds all of the coefficients
     Coef.A  = [Y(1:(end-1)),Y(1:(end-1)),Y(1:(end-1))+d(1:(end-1)).*(xi-X(1:(end-1)))+(dbar-d(1:(end-1))).*(xi-X(1:(end-1)))/2];
@@ -65,7 +84,7 @@ function F = ButlandSchumakerSpline(X,Y,X0)
     Coef.C  = [0.5*(d(2:end)-d(1:(end-1)))./(X(2:end)-X(1:(end-1))),0.5*(dbar-d(1:(end-1)))./(xi-X(1:(end-1))),0.5*(d(2:end)-dbar)./(X(2:end)-xi)];
     
     % Checks which points need interior knots
-    intknot = d(1:(end-1))+d(2:end) == 2*del;
+    intknot = d(1:(end-1))+d(2:end) == 2*delta;
     
     % Builds coefficients and ranges
     Range = []; Coefs = [];
@@ -73,6 +92,7 @@ function F = ButlandSchumakerSpline(X,Y,X0)
         if intknot(i) == 1
             Range   = [Range;[X(i),X(i+1)]];
             Coefs   = [Coefs;Coef.A(i,1),Coef.B(i,1),Coef.C(i,1)];
+            
         else
             Range   = [Range;[X(i),xi(i)];[xi(i),X(i+1)]];
             Coefs   = [Coefs;Coef.A(i,2),Coef.B(i,2),Coef.C(i,2)];
@@ -80,13 +100,14 @@ function F = ButlandSchumakerSpline(X,Y,X0)
         end
     end
     
-    % Interpolates
     for i = 1:size(X0,1)
-        temp        = Range(:,1) <= X0(i) & X0(i) <= Range(:,2);
-        F(i)        = max(sum(Coefs(temp,:).*[ones(size(Coefs(temp,:),1),1),(X0(i)-Range(temp,1)),(X0(i)-Range(temp,1)).^2],2));
-        i = i +1 
-        F
+        Coefs(Range(:,1) <= X0(i) & X0(i) <= Range(:,2)
+        
+        
+        sum(Coefs.*[ones(size(Coefs,1),1),(X0(i)-Range(:,1)),(X0(i)-Range(:,1)).^2],2);
     end
+    
+    
     
 end
     end

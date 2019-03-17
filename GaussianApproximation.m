@@ -7,7 +7,7 @@ classdef GaussianApproximation
         % # Initializiation() is required for all functions to run. 
         % # Polynomial() returns numerical solutions for the first N polynomials for a class of Gaussian polynomials evaluated at a set of points. If no points are entered, the symbolic expression for the Nth Gaussian polynomial is returned.
         % # NodesWeights() finds the nodes and weights for a variety of Gaussian polynomials numerically.
-        % # Interpolate() interpolates Y data using an Nth order polynomial for a variety of Gaussian polynomials.
+        % # Interpolate() interpolates (X,Y) data using an Nth order polynomial for a variety of Gaussian polynomials.
    
 %% 1. INITIALIZATION      
 function F          = Initialization(GaussianPolynomial)
@@ -21,7 +21,7 @@ function F          = Initialization(GaussianPolynomial)
     if isempty(F); fprintf('Invalid polynomial name'); return; end
 end
 %% 2. POLYNOMIAL
-function F          = Polynomial(PolynomialOrder,GaussianPolynomial,X)
+function F          = Polynomial(Degree,GaussianPolynomial,X)
     T               = GaussianApproximation.Initialization(GaussianPolynomial);
     
     % ========
@@ -32,7 +32,7 @@ function F          = Polynomial(PolynomialOrder,GaussianPolynomial,X)
     % explicit form, but this is unreliable for high-order polynomials.
     
     if nargin < 3
-        n           = PolynomialOrder;
+        n           = Degree;
         if T == 1
             m               = 0:n;
             temp1           = 1/2^n;
@@ -74,7 +74,7 @@ function F          = Polynomial(PolynomialOrder,GaussianPolynomial,X)
         % The recursive formulation is generally more accurate, so
         % numerical solutions should use this method.
         
-        n               = PolynomialOrder+1;
+        n               = Degree+1;
         XLen            = length(X);
         if isrow(X); X = X'; end
         F(:,1) = ones(XLen,1);
@@ -108,12 +108,12 @@ function F          = Polynomial(PolynomialOrder,GaussianPolynomial,X)
     end
 end
 %% 3. NODESWEIGHTS
-function F          = NodesWeights(PolynomialOrder,GaussianPolynomial)
+function F          = NodesWeights(Degree,GaussianPolynomial)
     
     % ==============
     % Initialization 
     % ==============
-    n       = PolynomialOrder;
+    n       = Degree;
     T       = GaussianApproximation.Initialization(GaussianPolynomial);
     Fn      = @(X) GaussianApproximation.Polynomial(n,GaussianPolynomial,X);
     
@@ -246,16 +246,16 @@ function F          = NodesWeights(PolynomialOrder,GaussianPolynomial)
 %     title('Weights')
 end    
 %% 4. INTERPOLATE
-function F          = Interpolate(YData,PolynomialOrder,GaussianPolynomial)
-    if isrow(YData); YData = YData'; end
-    MNodes  = length(YData);
-    N       = PolynomialOrder;
-    [X,~]   = GaussianApproximation.NodesWeights(MNodes,GaussianPolynomial);
-    poly    = GaussianApproximation.Polynomial(N,GaussianPolynomial,X);
-    for i = 1:(N+1)
-        Coef(i) = double(sum(YData.*poly{:,i})/sum(poly{:,i}.^2));
-    end    
-    F   = @(X) sum(table2array(GaussianApproximation.NumericPolynomial(N,GaussianPolynomial,X)).*Coef);
+function F          = Interpolate(X0,Y,X,GaussianPolynomial,Degree)
+    if isrow(Y); Y = Y'; end
+    if isrow(X); X = X'; end
+    if size(X,1) ~= size(Y,1); sprintf('Incorrect sizes'); return; end
+    poly    = GaussianApproximation.Polynomial(Degree,GaussianPolynomial,X);
+    poly    = poly{:,1:end};
+    c       = sum(Y.*poly)./sum(poly.^2);
+    poly2   = GaussianApproximation.Polynomial(Degree,GaussianPolynomial,X0);
+    poly2   = poly2{:,1:end};
+    F       = sum(c.*poly2,2);
 end
     end
 end
