@@ -4,33 +4,31 @@ classdef MarkovChains
         %
         % Written by Curtis Aquino (2019). Contains:
         %
-        % # TauchenHussey() - PLANNED
         % # Rouwenhorst()
         % # StationaryDistribution()
-        % # Summary() - PLANNED
         % # Moments()
         % # Simulate()
-        % # ARtoVAR() - PLANNED
         
 function [Y,PTM]    = Rouwenhorst(N,shockvar,p,q)
-    
 %##########################################################################    
-% This function applies the Rouwenhorst method as suggested by Karen
-% Kopecky (2010) to discretize a stationary AR(1) process with normally
-% distributed errors of the form: zt = rho z_{t-1} + e_t
+% This function 
+    
+    % Given zt = rho z_{t-1} + e_t
+
+    
 %##########################################################################    
     
 % ********************************************************
-% Default is symmetry of p and q
+% Default is symmetry,
 % ********************************************************
 
 if nargin < 5
     q           = p; 
 end
             
-% ********************************************************
+% ***************************
 % Recursive formulation
-% ********************************************************
+% ***************************
 
 Pi = cell(1,N);
 for i = 2:N
@@ -44,9 +42,9 @@ for i = 2:N
 end
 PTM             = Pi{end};
             
-% ********************************************************
+% ***************************
 % Generate the state space
-% ********************************************************
+% ***************************
 
 Psi             = sqrt(N-1)*sqrt(shockvar);
 Y               = fliplr(linspace(-Psi,Psi,N))';
@@ -54,7 +52,6 @@ Y               = fliplr(linspace(-Psi,Psi,N))';
 end
 
 function F          = StationaryDistribution(PTM,maxIter)
-    
 %##########################################################################
 % This function takes a probability transition matrix, PTM, and iterates on
 % an equispaced initial guess until machine epsilon convergence. If no
@@ -126,7 +123,6 @@ F                   = pi0';
 end
     
 function F          = Moments(PTM,X)
-    
 %##########################################################################
 % Given a probability transition matrix, PTM, and a vector of values for
 % each state, X, Moments() will produce a table output that displays the
