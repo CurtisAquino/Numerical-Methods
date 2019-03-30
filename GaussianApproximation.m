@@ -22,58 +22,57 @@ function F          = Initialization(GaussianPolynomial)
 end
 %% 2. POLYNOMIAL
 function F          = Polynomial(Degree,GaussianPolynomial,X)
-    T               = GaussianApproximation.Initialization(GaussianPolynomial);
+    % For testing:
+    %GaussianPolynomial = 'Gauss-Chebyshev'; PolynomialOrder = 4;
     
-    % ========
-    % Symbolic
-    % ========
-        
-    % The symbolic formulation is easy because each polynomial has an
-    % explicit form, but this is unreliable for high-order polynomials.
+    % ==============
+    % Initialization
+    % ==============
+    
+    T                   = GaussianApproximation.Initialization(GaussianPolynomial);
+    
+    % =======================
+    % Symbolic Representation
+    % =======================
+    
+    % If no X is specified, this will recursively build the symbolic 
+    % representation of the first N polynomials.
     
     if nargin < 3
-        n           = Degree;
+        N               = Degree+1;
+        X               = sym('X','real');
+        P               = sym(zeros(N,1));
+        P(1)            = 1;
         if T == 1
-            m               = 0:n;
-            temp1           = 1/2^n;
-            temp2           = factorial(n).^2;
-            temp3           = (factorial(m).*factorial(n-m)).^2;
-            temp4           = ((sym('X')-1).^(n-m)).*(sym('X')+1).^m;
-            F               = simplify(temp1*sum((temp2.*temp4)./temp3));
+            Coef        = [[0,0,X.*(2.*(1:N)+1)./(2:(N+1))];[0,0,(1:N)./(2:(N+1))]];
+            P(2)        = X;
         end
         if T == 2
-            m               = 0:floor(n/2);
-            temp1           = n/2;
-            temp2           = ((-1).^m).*factorial(n-m-1).*2.^(n-2*m);
-            temp3           = factorial(m).*factorial(n-2*m);
-            temp4           = sym('X').^(n-2*m);
-            F               = temp1*sum((temp2.*temp4)./temp3);
+            Coef        = [[0,0,repmat(2*X,1,N)]; [0,0,ones(1,N)]];
+            P(2)        = X;
         end
         if T == 3
-            m               = 0:floor(n/2);
-            temp1           = factorial(n);
-            temp2           = ((-1).^m).*2.^(n-2*m);
-            temp3           = factorial(m).*factorial(n-2*m);
-            temp4           = sym('X').^(n-2*m);
-            F               = temp1*sum((temp2.*temp4)./temp3);
+            Coef        = [[0,0,repmat(2*X,1,N)]; [0,0,2*(1:N)]];
+            P(2)        = 2*X;
         end
         if T == 4
-            m               = 0:n;
-            temp1           = 1;
-            temp2           = ((-1).^m).*factorial(n);
-            temp3           = (factorial(m).^2).*factorial(n-m);
-            temp4           = sym('X').^m;
-            F               = temp1*sum((temp2.*temp4)./temp3);
+            Coef        = [[0,0,(2.*(1:N)+1-X)./(2:(N+1))];[0,0,(1:N)./(2:(N+1))]];
+            P(2)        = 1-X;
         end
+        for i = 3:N
+            P(i) =  Coef(1,i)*P(i-1)-Coef(2,i)*P(i-2);
+        end
+        F = P;
     else
         
-        % =========
-        % Recursion
-        % =========
+    % ==================
+    % Numerical Solution
+    % ==================
+    
+    % If X is specified, this will recursively evaluate the first N
+    % polynomials.
         
-        % The recursive formulation is generally more accurate, so
-        % numerical solutions should use this method.
-        
+        % Numerical solutions given X data
         n               = Degree+1;
         XLen            = length(X);
         if isrow(X); X = X'; end
@@ -113,6 +112,7 @@ function F          = NodesWeights(Degree,GaussianPolynomial)
     % ==============
     % Initialization 
     % ==============
+    
     n       = Degree;
     T       = GaussianApproximation.Initialization(GaussianPolynomial);
     Fn      = @(X) GaussianApproximation.Polynomial(n,GaussianPolynomial,X);
@@ -246,16 +246,17 @@ function F          = NodesWeights(Degree,GaussianPolynomial)
 %     title('Weights')
 end    
 %% 4. INTERPOLATE
-function F          = Interpolate(X0,Y,X,GaussianPolynomial,Degree)
+function F          = Interpolate(Y,X,Degree,GaussianPolynomial,X0)
     if isrow(Y); Y = Y'; end
     if isrow(X); X = X'; end
-    if size(X,1) ~= size(Y,1); sprintf('Incorrect sizes'); return; end
-    poly    = GaussianApproximation.Polynomial(Degree,GaussianPolynomial,X);
-    poly    = poly{:,1:end};
-    c       = sum(Y.*poly)./sum(poly.^2);
-    poly2   = GaussianApproximation.Polynomial(Degree,GaussianPolynomial,X0);
-    poly2   = poly2{:,1:end};
-    F       = sum(c.*poly2,2);
+    poly    = GaussianApproximation.Polynomial(Degree,GaussianPolynomial);
+    c       = double(sum(Y.*reshape(subs(poly,X),[],Degree+1))./sum(reshape(subs(poly,X),[],Degree+1).^2));
+    if nargin < 5
+        F       = sum(c'.*poly);
+    else
+        F       = matlabFunction(sum(c'.*poly));
+        F       = F(X0);
+    end
 end
     end
 end

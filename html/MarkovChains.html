@@ -1,0 +1,385 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>MarkovChains</title><meta name="generator" content="MATLAB 9.5"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2019-03-28"><meta name="DC.source" content="MarkovChains.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img, h1 img, h2 img { margin-bottom:0px; } 
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, code { font-size:12px; }
+tt { font-size: 1.2em; }
+pre { margin:0px 0px 20px; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+pre.error { color:red; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><h2>Contents</h2><div><ul><li><a href="#2">MarkovChains</a></li></ul></div><pre class="codeinput"><span class="keyword">classdef</span> MarkovChains
+    <span class="keyword">methods</span>(Static)
+</pre><h2 id="2">MarkovChains</h2><p>Written by Curtis Aquino (2019). Contains:</p><div><ol><li>Rouwenhorst()</li><li>StationaryDistribution()</li><li>Moments()</li></ol></div><div><ol><li>Simulate(): Generates a simulated sequence of state variables</li></ol></div><pre class="codeinput"><span class="keyword">function</span> F      = Rouwenhorst(N,shockvar,p,q)
+            <span class="comment">% Given zt = rho z_{t-1} + e_t</span>
+
+            <span class="comment">% Symmetry is default</span>
+            <span class="keyword">if</span> nargin &lt; 4; q = p; <span class="keyword">end</span>
+
+            <span class="comment">% Recursion</span>
+            Pi = cell(1,N);
+            <span class="keyword">for</span> i = 2:N
+                <span class="keyword">if</span> i == 2
+                    Pi{i}   = [p,1-p;1-p,p];
+                <span class="keyword">else</span>
+                    Ze = zeros(i-1,1);
+                    Pi{i} = p*[Pi{i-1},Ze;Ze',0]+(1-p)*[Ze,Pi{i-1};0,Ze']+(1-q)*[Ze',0;Pi{i-1},Ze]+q*[0,Ze';Ze,Pi{i-1}];
+                    Pi{i}(2:(end-1),:) = Pi{i}(2:(end-1),:)/2;
+                <span class="keyword">end</span>
+            <span class="keyword">end</span>
+            Pi = Pi{end};
+
+            <span class="comment">% State space</span>
+            Psi= sqrt(N-1)*sqrt(shockvar);
+            Y = fliplr(linspace(-Psi,Psi,N));
+
+            <span class="comment">% Results</span>
+            F = table(Y',Pi,<span class="string">'VariableNames'</span>,{<span class="string">'StateSpace'</span>,<span class="string">'MarkovChain'</span>});
+
+<span class="keyword">end</span>
+
+<span class="keyword">function</span> F      = StationaryDistribution(PTM)
+
+<span class="comment">% ***************************</span>
+<span class="comment">% Ensures that input is a PTM</span>
+<span class="comment">% ***************************</span>
+
+<span class="keyword">if</span> range(size(PTM)) ~= 0
+    error(<span class="string">'This probability transition matrix is not a square'</span>)
+<span class="keyword">end</span>
+
+<span class="comment">% ********************************************************</span>
+<span class="comment">% Finds the stationary distribution depending on data type</span>
+<span class="comment">% ********************************************************</span>
+
+type         = class(PTM);
+<span class="keyword">switch</span> type
+    <span class="keyword">case</span> <span class="string">'table'</span>
+        G = PTM{:,:}^1000;
+        F = (( ones(1,size(G,1))/size(G,1)) * G)';
+    <span class="keyword">case</span> <span class="string">'double'</span>
+        G = PTM^1000;
+        F = (( ones(1,size(G,1))/size(G,1)) * G)';
+    <span class="keyword">otherwise</span>
+        error(<span class="string">'Incorrect input type'</span>)
+<span class="keyword">end</span>
+
+<span class="comment">% *****************************</span>
+<span class="comment">% Prints failure of convergence</span>
+<span class="comment">% *****************************</span>
+
+<span class="keyword">if</span> norm(sqrt(size(G,1))-norm(sum(G,2))) &gt; 10^(-8)
+    error(<span class="string">'No stationary distribution exists'</span>)
+<span class="keyword">end</span>
+
+<span class="keyword">end</span>
+
+<span class="keyword">function</span> F      = Moments(PTM,X)
+
+<span class="comment">% ********************************************************</span>
+<span class="comment">% Fixes input size</span>
+<span class="comment">% ********************************************************</span>
+
+<span class="keyword">if</span> isrow(X)
+    X = X';
+<span class="keyword">end</span>
+
+<span class="comment">% ********************************************************</span>
+<span class="comment">% Derives the stationary distribution, if it exists</span>
+<span class="comment">% ********************************************************</span>
+
+StDs            = MarkovChains.StationaryDistribution(PTM);
+
+<span class="comment">% ********************************************************</span>
+<span class="comment">% Computes moments following Klein (2019)</span>
+<span class="comment">% ********************************************************</span>
+
+Mean            = sum(StDs.*X);
+Variance        = sum(((X-Mean).^2).*StDs);
+Covariance      = sum(StDs'.*sum(X(:)'*X.*PTM,2))-Mean^2;
+Autocorrelation = Covariance/Variance;
+
+<span class="comment">% ********************************************************</span>
+<span class="comment">% Produces output as a table</span>
+<span class="comment">% ********************************************************</span>
+
+F               = array2table([Mean,Variance],<span class="string">'VariableNames'</span>,{<span class="string">'Mean'</span>,<span class="string">'Variance'</span>});
+
+
+<span class="keyword">end</span>
+
+<span class="keyword">function</span> F      = Simulate(PTM,T,S0)
+
+
+
+<span class="comment">% ********************************************************</span>
+<span class="comment">% Default argument</span>
+<span class="comment">% ********************************************************</span>
+
+<span class="keyword">if</span> nargin &lt; 3
+    S(1)    = 1;
+<span class="keyword">else</span>
+    S(1)    = S0;
+<span class="keyword">end</span>
+
+<span class="comment">% ********************************************************</span>
+<span class="comment">% Checks whether the PTM is valid</span>
+<span class="comment">% ********************************************************</span>
+
+<span class="keyword">if</span> range(size(PTM)) ~= 0
+    error(<span class="string">'This is not a probability transition matrix'</span>)
+<span class="keyword">end</span>
+
+<span class="comment">% ********************************************************</span>
+<span class="comment">% Builds bounds for uniform draws</span>
+<span class="comment">% ********************************************************</span>
+
+Bounds          = cumsum(PTM)';
+<span class="keyword">for</span> i = 1:size(PTM,1)
+    Bd(:,:,i)   = [[0;Bounds(i,1:(end-1))'],Bounds(2,:)'];
+<span class="keyword">end</span>
+UniformDraws    = rand(T,1);
+
+<span class="comment">% ********************************************************</span>
+<span class="comment">% Simulation</span>
+<span class="comment">% ********************************************************</span>
+
+<span class="keyword">for</span> i = 2:T
+    S(i)         = find(UniformDraws(i-1)&gt;Bd(:,1,S(i-1)) &amp; UniformDraws(i-1)&lt;Bd(:,2,S(i-1)));
+<span class="keyword">end</span>
+
+<span class="comment">% ********************************************************</span>
+<span class="comment">% Burns 5% to mitigate dependence on initial conditions</span>
+<span class="comment">% ********************************************************</span>
+
+F = S(round(0.05*T)+1:end);
+
+
+<span class="keyword">end</span>
+</pre><pre class="codeinput">    <span class="keyword">end</span>
+<span class="keyword">end</span>
+</pre><p class="footer"><br><a href="https://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2018b</a><br></p></div><!--
+##### SOURCE BEGIN #####
+classdef MarkovChains
+    methods(Static)
+        %% MarkovChains
+        %
+        % Written by Curtis Aquino (2019). Contains:
+        %
+        % # Rouwenhorst()
+        % # StationaryDistribution()
+        % # Moments()
+        %
+        % # Simulate(): Generates a simulated sequence of state variables 
+        
+function F      = Rouwenhorst(N,shockvar,p,q)
+            % Given zt = rho z_{t-1} + e_t
+
+            % Symmetry is default
+            if nargin < 4; q = p; end
+            
+            % Recursion
+            Pi = cell(1,N);
+            for i = 2:N
+                if i == 2
+                    Pi{i}   = [p,1-p;1-p,p];
+                else
+                    Ze = zeros(i-1,1);
+                    Pi{i} = p*[Pi{i-1},Ze;Ze',0]+(1-p)*[Ze,Pi{i-1};0,Ze']+(1-q)*[Ze',0;Pi{i-1},Ze]+q*[0,Ze';Ze,Pi{i-1}];  
+                    Pi{i}(2:(end-1),:) = Pi{i}(2:(end-1),:)/2;
+                end
+            end
+            Pi = Pi{end};
+            
+            % State space
+            Psi= sqrt(N-1)*sqrt(shockvar);
+            Y = fliplr(linspace(-Psi,Psi,N));
+            
+            % Results
+            F = table(Y',Pi,'VariableNames',{'StateSpace','MarkovChain'});
+            
+end
+
+function F      = StationaryDistribution(PTM)
+
+% ***************************
+% Ensures that input is a PTM
+% ***************************
+
+if range(size(PTM)) ~= 0
+    error('This probability transition matrix is not a square')
+end
+
+% ********************************************************
+% Finds the stationary distribution depending on data type
+% ********************************************************
+
+type         = class(PTM);
+switch type 
+    case 'table'
+        G = PTM{:,:}^1000;
+        F = (( ones(1,size(G,1))/size(G,1)) * G)';
+    case 'double'
+        G = PTM^1000;
+        F = (( ones(1,size(G,1))/size(G,1)) * G)';
+    otherwise
+        error('Incorrect input type')
+end
+
+% *****************************
+% Prints failure of convergence
+% *****************************
+
+if norm(sqrt(size(G,1))-norm(sum(G,2))) > 10^(-8)
+    error('No stationary distribution exists')
+end
+
+end
+    
+function F      = Moments(PTM,X)
+    
+% ********************************************************
+% Fixes input size
+% ********************************************************
+
+if isrow(X)
+    X = X';
+end
+
+% ********************************************************
+% Derives the stationary distribution, if it exists
+% ********************************************************
+    
+StDs            = MarkovChains.StationaryDistribution(PTM);
+
+% ********************************************************
+% Computes moments following Klein (2019)
+% ********************************************************
+
+Mean            = sum(StDs.*X);
+Variance        = sum(((X-Mean).^2).*StDs);
+Covariance      = sum(StDs'.*sum(X(:)'*X.*PTM,2))-Mean^2;
+Autocorrelation = Covariance/Variance;
+
+% ********************************************************
+% Produces output as a table
+% ********************************************************
+
+F               = array2table([Mean,Variance],'VariableNames',{'Mean','Variance'});
+
+
+end
+
+function F      = Simulate(PTM,T,S0)
+    
+    
+
+% ********************************************************
+% Default argument
+% ********************************************************    
+    
+if nargin < 3
+    S(1)    = 1;
+else
+    S(1)    = S0;
+end
+    
+% ********************************************************
+% Checks whether the PTM is valid
+% ********************************************************
+
+if range(size(PTM)) ~= 0
+    error('This is not a probability transition matrix')
+end
+
+% ********************************************************
+% Builds bounds for uniform draws
+% ********************************************************
+    
+Bounds          = cumsum(PTM)';
+for i = 1:size(PTM,1)
+    Bd(:,:,i)   = [[0;Bounds(i,1:(end-1))'],Bounds(2,:)'];
+end
+UniformDraws    = rand(T,1);
+    
+% ********************************************************
+% Simulation
+% ********************************************************
+
+for i = 2:T
+    S(i)         = find(UniformDraws(i-1)>Bd(:,1,S(i-1)) & UniformDraws(i-1)<Bd(:,2,S(i-1)));
+end
+
+% ********************************************************
+% Burns 5% to mitigate dependence on initial conditions
+% ********************************************************
+
+F = S(round(0.05*T)+1:end);
+    
+    
+end
+
+
+
+    end
+end
+##### SOURCE END #####
+--></body></html>

@@ -84,8 +84,6 @@ function F = ButlandSchumakerSpline(X,Y,X0)
     for i = 1:size(X0,1)
         temp        = Range(:,1) <= X0(i) & X0(i) <= Range(:,2);
         F(i)        = max(sum(Coefs(temp,:).*[ones(size(Coefs(temp,:),1),1),(X0(i)-Range(temp,1)),(X0(i)-Range(temp,1)).^2],2));
-        i = i +1 
-        F
     end
     
 end
