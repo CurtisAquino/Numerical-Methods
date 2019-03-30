@@ -1,3 +1,8 @@
 # NumericalMethods
 
-this will do some stuff
+MarkovProcesses
+
+- Rouwenhorst
+- StationaryDistribution
+- Moments
+- Simulate
