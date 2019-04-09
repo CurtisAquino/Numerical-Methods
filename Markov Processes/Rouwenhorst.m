@@ -36,7 +36,7 @@ PTM             = Pi{end};
 % Generate the state space
 % ********************************************************
 
-Psi             = sqrt(N-1)*sqrt(shockvar);
+Psi             = sqrt((N-1)/(1-(2*p-1)^2))*sqrt(shockvar);
 Y               = fliplr(linspace(-Psi,Psi,N))';
             
 end
